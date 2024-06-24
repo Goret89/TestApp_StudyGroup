@@ -96,6 +96,44 @@ namespace ComponentTests
             resultStudyModel.Value.Should().NotBeNull().And.Be(expectedErrorMessage);
         }
 
+        [Test]
+        public async Task CreateStudyGroup_OnTheSameSubject_ShouldReturnUnprocessableEntityObjectResult()
+        {
+            // Arrange
+            var studyGroup = new StudyGroup(111, "Test Study Group 1", Subject.Math, DateTime.UtcNow, new List<User>());
+            var studyGroup2 = new StudyGroup(112, "Test Study Group 2", Subject.Math, DateTime.UtcNow, new List<User>());
+            var expectedErrorMessage = "The user can create only one the study group by any subject.";
+
+            // Act
+            await _studyGroupController.CreateStudyGroup(studyGroup);
+            var result = await _studyGroupController.CreateStudyGroup(studyGroup2);
+
+            // Assert
+            result.Should().NotBeNull().And.BeOfType<UnprocessableEntityObjectResult>();
+            var resultStudyModel = (ErrorMessage)((UnprocessableEntityObjectResult)result).Value;
+            resultStudyModel.Should().NotBeNull().And.BeOfType<ErrorMessage>();
+            resultStudyModel.Value.Should().NotBeNull().And.Be(expectedErrorMessage);
+        }
+
+        [Test]
+        public async Task CreateStudyGroup_WithTheSameStudyGroupName_ShouldReturnUnprocessableEntityObjectResult()
+        {
+            // Arrange
+            var studyGroup = new StudyGroup(111, "Test Study Group 1", Subject.Math, DateTime.UtcNow, new List<User>());
+            var studyGroup2 = new StudyGroup(112, "Test Study Group 1", Subject.Chemistry, DateTime.UtcNow, new List<User>());
+            var expectedErrorMessage = "The study group with the \"Test Study Group 1\" has already created.";
+
+            // Act
+            await _studyGroupController.CreateStudyGroup(studyGroup);
+            var result = await _studyGroupController.CreateStudyGroup(studyGroup2);
+
+            // Assert
+            result.Should().NotBeNull().And.BeOfType<UnprocessableEntityObjectResult>();
+            var resultStudyModel = (ErrorMessage)((UnprocessableEntityObjectResult)result).Value;
+            resultStudyModel.Should().NotBeNull().And.BeOfType<ErrorMessage>();
+            resultStudyModel.Value.Should().NotBeNull().And.Be(expectedErrorMessage);
+        }
+
         #endregion
 
         #region GetStudyGroup
@@ -105,7 +143,7 @@ namespace ComponentTests
         {
             // Arrange
             var studyGroup = new StudyGroup(111, "Test Study Group 1", Subject.Math, DateTime.UtcNow, new List<User>());
-            var studyGroup2 = new StudyGroup(112, "Test Study Group 2", Subject.Math, DateTime.UtcNow, new List<User>());
+            var studyGroup2 = new StudyGroup(112, "Test Study Group 2", Subject.Chemistry, DateTime.UtcNow, new List<User>());
 
             await _studyGroupController.CreateStudyGroup(studyGroup);
             await _studyGroupController.CreateStudyGroup(studyGroup2);
@@ -119,6 +157,7 @@ namespace ComponentTests
             var resultStudyModel = (List<StudyGroup>)((OkObjectResult)result).Value;
             resultStudyModel.Should().NotBeNull().And.BeOfType<List<StudyGroup>>();
             resultStudyModel.Count.Should().Be(2);
+            resultStudyModel.Should().BeEquivalentTo(new List<StudyGroup> { studyGroup, studyGroup2 });
         }
 
         #endregion
@@ -126,7 +165,7 @@ namespace ComponentTests
         #region SeachStudyGroup
 
         [Test]
-        public async Task FilterStudyGroups_ShouldReturn200_ReturnBody()
+        public async Task FilterStudyGroups_ByMathSubject_ShouldReturn200_ReturnBody()
         {
             // Arrange
             var studyGroup = new StudyGroup(111, "Test Study Group 1", Subject.Math, DateTime.UtcNow, new List<User>());
@@ -148,6 +187,33 @@ namespace ComponentTests
             var resultStudyModel = (List<StudyGroup>)((OkObjectResult)result).Value;
             resultStudyModel.Should().NotBeNull().And.BeOfType<List<StudyGroup>>();
             resultStudyModel.Count.Should().Be(2);
+            resultStudyModel.Should().BeEquivalentTo(new List<StudyGroup> { studyGroup, studyGroup4 });
+        }
+
+        [Test]
+        public async Task FilterStudyGroups_ByTwoSubjects_ShouldReturn200_ReturnBody()
+        {
+            // Arrange
+            var studyGroup = new StudyGroup(111, "Test Study Group 1", Subject.Math, DateTime.UtcNow, new List<User>());
+            var studyGroup2 = new StudyGroup(112, "Test Study Group 2", Subject.Chemistry, DateTime.UtcNow, new List<User>());
+            var studyGroup3 = new StudyGroup(113, "Test Study Group 3", Subject.Physics, DateTime.UtcNow, new List<User>());
+            var studyGroup4 = new StudyGroup(114, "Test Study Group 4", Subject.Math, DateTime.UtcNow, new List<User>());
+
+            await _studyGroupController.CreateStudyGroup(studyGroup);
+            await _studyGroupController.CreateStudyGroup(studyGroup2);
+            await _studyGroupController.CreateStudyGroup(studyGroup3);
+            await _studyGroupController.CreateStudyGroup(studyGroup4);
+
+            // Act
+            var result = await _studyGroupController.SearchStudyGroups("filter=Subject eq 'Math' or Subject eq 'Chemistry'");
+
+            // Assert
+            result.Should().NotBeNull().And.BeOfType<OkObjectResult>();
+
+            var resultStudyModel = (List<StudyGroup>)((OkObjectResult)result).Value;
+            resultStudyModel.Should().NotBeNull().And.BeOfType<List<StudyGroup>>();
+            resultStudyModel.Count.Should().Be(2);
+            resultStudyModel.Should().BeEquivalentTo(new List<StudyGroup> { studyGroup, studyGroup2, studyGroup4 });
         }
 
         [Test]
@@ -241,18 +307,62 @@ namespace ComponentTests
         }
 
         [Test]
-        public async Task JoinStudyGroup_ShouldReturnOkObjectResult()
+        public async Task Join_AlreadyJoinedStudyGroup_ShouldReturnUnprocessableObjectResult()
         {
             // Arrange
             var studyGroup = new StudyGroup(111, "Test Study Group 1", Subject.Math, new DateTime(2024, 6, 21, 9, 49, 00, 123), new List<User>());
-
             await _studyGroupController.CreateStudyGroup(studyGroup);
+
+            var expectedErrorMessage = "The user already joined to the \"Test Study Group 1\" study group";
+
+            // Act
+            await _studyGroupController.JoinStudyGroup(111, 1);
+            var result = await _studyGroupController.JoinStudyGroup(111, 1);
+
+            // Assert
+            result.Should().NotBeNull().And.BeOfType<UnprocessableEntityObjectResult>();
+            var resultStudyModel = (ErrorMessage)((UnprocessableEntityObjectResult)result).Value;
+            resultStudyModel.Should().NotBeNull().And.BeOfType<ErrorMessage>();
+            resultStudyModel.Value.Should().NotBeNull().And.Be(expectedErrorMessage);
+        }
+
+        [Test]
+        public async Task Join_AlreadyJoinedToStudyGroup_OnSameJubject_ShouldReturnUnprocessableObjectResult()
+        {
+            // Arrange
+            var studyGroup = new StudyGroup(111, "Test Study Group 1", Subject.Math, new DateTime(2024, 6, 21, 9, 49, 00, 123), new List<User>());
+            await _studyGroupController.CreateStudyGroup(studyGroup);
+
+            var studyGroup2 = new StudyGroup(112, "Test Study Group 2", Subject.Math, new DateTime(2024, 6, 21, 9, 49, 00, 123), new List<User>());
+            await _studyGroupController.CreateStudyGroup(studyGroup2);
+
+            var expectedErrorMessage = "The user already joined to study group on the Math subject";
+
+            // Act
+            await _studyGroupController.JoinStudyGroup(111, 1);
+            var result = await _studyGroupController.JoinStudyGroup(112, 1);
+
+            // Assert
+            result.Should().NotBeNull().And.BeOfType<UnprocessableEntityObjectResult>();
+            var resultStudyModel = (ErrorMessage)((UnprocessableEntityObjectResult)result).Value;
+            resultStudyModel.Should().NotBeNull().And.BeOfType<ErrorMessage>();
+            resultStudyModel.Value.Should().NotBeNull().And.Be(expectedErrorMessage);
+        }
+
+        [Test]
+        public async Task Join_ToNon_ExistentStudyGroup_ShouldReturnUnprocessableObjectResult()
+        {
+            // Arrange
+            var expectedErrorMessage = "The user can join to non-existent study group";
 
             // Act
             var result = await _studyGroupController.JoinStudyGroup(111, 1);
 
             // Assert
-            result.Should().NotBeNull().And.BeOfType<OkResult>();
+            result.Should().NotBeNull().And.BeOfType<UnprocessableEntityObjectResult>();
+            var resultStudyModel = (ErrorMessage)((UnprocessableEntityObjectResult)result).Value;
+            resultStudyModel.Should().NotBeNull().And.BeOfType<ErrorMessage>();
+            resultStudyModel.Value.Should().NotBeNull().And.Be(expectedErrorMessage);
         }
 
         #endregion
