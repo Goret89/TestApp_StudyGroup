@@ -162,7 +162,7 @@ namespace ComponentTests
 
         #endregion
 
-        #region SeachStudyGroup
+        #region FilterStudyGroup
 
         [Test]
         public async Task FilterStudyGroups_ByMathSubject_ShouldReturn200_ReturnBody()
@@ -216,6 +216,9 @@ namespace ComponentTests
             resultStudyModel.Should().BeEquivalentTo(new List<StudyGroup> { studyGroup, studyGroup2, studyGroup4 });
         }
 
+        #endregion
+
+        #region SortStudyGroup
         [Test]
         public async Task SortStudyGroupsAscending_ShouldReturn200_ReturnBody()
         {
