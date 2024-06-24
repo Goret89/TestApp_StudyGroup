@@ -116,12 +116,12 @@ namespace ComponentTests
         }
 
         [Test]
-        public async Task CreateStudyGroup_WithTheSameStudyGroupName_ShouldReturnUnprocessableEntityObjectResult()
+        public async Task Create_TheSecondStudyGroup_InAnotherSubject_ShouldReturnUnprocessableEntityObjectResult()
         {
             // Arrange
             var studyGroup = new StudyGroup(111, "Test Study Group 1", Subject.Math, DateTime.UtcNow, new List<User>());
-            var studyGroup2 = new StudyGroup(112, "Test Study Group 1", Subject.Chemistry, DateTime.UtcNow, new List<User>());
-            var expectedErrorMessage = "The study group with the \"Test Study Group 1\" has already created.";
+            var studyGroup2 = new StudyGroup(112, "Test Study Group 2", Subject.Chemistry, DateTime.UtcNow, new List<User>());
+            var expectedErrorMessage = "The user can create only one study group by one Subject";
 
             // Act
             await _studyGroupController.CreateStudyGroup(studyGroup);
